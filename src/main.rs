@@ -1,7 +1,7 @@
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer, web};
 use anyhow::Result;
-use api_back_trio::api::handlers::config;
+use api_back_trio::api::config as api_config;
 use api_back_trio::config::settings::Settings;
 use api_back_trio::core::db::init_db;
 use api_back_trio::core::server::AppState;
@@ -25,13 +25,15 @@ async fn main() -> Result<()> {
         settings.tls.as_ref().unwrap().key_path.as_str(),
     )?;
 
+    let server_settings = settings.server.clone();
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .app_data(web::Data::new(state.clone()))
-            .configure(config)
+            .app_data(web::Data::new(settings.clone()))
+            .configure(api_config)
     })
-    .bind_openssl((settings.server.host.as_str(), settings.server.port), ssl)?
+    .bind_openssl((server_settings.host.as_str(), server_settings.port), ssl)?
     .run()
     .await?;
 

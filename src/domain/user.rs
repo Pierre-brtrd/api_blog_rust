@@ -8,6 +8,13 @@ use crate::{
     domain::validation::{PasswordRequirements, validate_password},
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum Role {
+    User,
+    Admin,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
@@ -16,6 +23,7 @@ pub struct User {
     pub email: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
+    pub role: Role,
 }
 
 #[derive(Debug, Serialize)]
@@ -89,8 +97,34 @@ impl UpdateUser {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
+pub struct RawLoginRequest {
+    #[validate(required(message = "Username obligatoire"))]
+    pub username: Option<String>,
+    #[validate(required(message = "Password obligatoire"))]
+    pub password: Option<String>,
+}
+
+impl RawLoginRequest {
+    pub fn validate_login(&self) -> Result<(), ApiError> {
+        self.validate()
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        Ok(())
+    }
+}
+
 pub struct LoginUser {
     pub username: String,
     pub password: String,
+}
+
+impl TryFrom<RawLoginRequest> for LoginUser {
+    type Error = ApiError;
+
+    fn try_from(raw: RawLoginRequest) -> Result<Self, ApiError> {
+        Ok(LoginUser {
+            username: raw.username.unwrap(),
+            password: raw.password.unwrap(),
+        })
+    }
 }

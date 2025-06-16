@@ -1,17 +1,13 @@
 meta {
-  name: Delete a user
+  name: Get one user
   type: http
-  seq: 2
+  seq: 6
 }
 
-delete {
-  url: https://localhost:8080/users/b1550e9f-e3ba-4fb6-be73-cea0034b5669
+get {
+  url: https://localhost:8080/users/97400a91-d9fb-404c-8892-c96b8021cd88
   body: none
   auth: bearer
-}
-
-headers {
-  accept: application/json
 }
 
 auth:bearer {

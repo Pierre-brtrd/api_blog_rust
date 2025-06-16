@@ -7,12 +7,16 @@ meta {
 patch {
   url: https://localhost:8080/users/2b18cdb8-4b05-45a8-adfd-aa2746d24ff6
   body: json
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyYjE4Y2RiOC00YjA1LTQ1YTgtYWRmZC1hYTI3NDZkMjRmZjYiLCJleHAiOjE3NTAxODUxOTZ9.6JW3AFtO6OvpSdHHMtwgF-xiMm8CaZmQQfvQSD5-xik
 }
 
 body:json {
   {
     "username": "Pierre_brtrd",
-    "email": "paul@test.com"
+    "password": "Test1234!"
   }
 }

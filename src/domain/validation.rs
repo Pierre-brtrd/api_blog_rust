@@ -43,7 +43,7 @@ pub fn validate_password(password: &str, req: &PasswordRequirements) -> Result<(
         return Err("Password must contain at least one lowercase letter".to_string());
     }
 
-    if req.require_digit && !password.chars().any(|c| c.is_digit(10)) {
+    if req.require_digit && !password.chars().any(|c| c.is_ascii_digit()) {
         return Err("Password must contain at least one digit".to_string());
     }
 

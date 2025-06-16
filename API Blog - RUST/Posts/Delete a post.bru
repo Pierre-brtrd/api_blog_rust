@@ -1,15 +1,19 @@
 meta {
   name: Delete a post
   type: http
-  seq: 2
+  seq: 3
 }
 
 delete {
   url: https://localhost:8080/posts/8b109816-6736-4890-ae1a-5ded28531bca
   body: none
-  auth: inherit
+  auth: bearer
 }
 
 headers {
   accept: application/json
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyYjE4Y2RiOC00YjA1LTQ1YTgtYWRmZC1hYTI3NDZkMjRmZjYiLCJleHAiOjE3NTAxODUxOTZ9.6JW3AFtO6OvpSdHHMtwgF-xiMm8CaZmQQfvQSD5-xik
 }

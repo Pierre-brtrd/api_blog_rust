@@ -125,6 +125,12 @@ cargo run --release
 
 ---
 
+## 🧪 Tests
+
+Un dossier API Blog - RUST est à disposition pour tester sur BRUNO les différents endpoints de l'API.
+
+---
+
 ## 📖 Documentation
 
 -   [Actix-Web](https://actix.rs)

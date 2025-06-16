@@ -1,11 +1,20 @@
 pub mod core {
+    pub mod auth;
     pub mod db;
     pub mod server;
     pub mod tls;
 }
 pub mod api {
     pub mod error;
-    pub mod handlers;
+    pub mod login;
+    pub mod post;
+    pub mod user;
+
+    pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
+        user::config(cfg);
+        post::config(cfg);
+        login::config(cfg);
+    }
 }
 
 pub mod config {
