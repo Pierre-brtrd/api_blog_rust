@@ -3,7 +3,7 @@ use crate::{
     domain::{
         error::DomainError,
         repository::UserRepository,
-        user::{NewUser, User},
+        user::{NewUser, Role, User},
     },
 };
 use async_trait::async_trait;
@@ -59,7 +59,7 @@ impl UserRepository for SqliteUserRepo {
         let rows = sqlx::query_as!(
             User,
             r#"
-            SELECT id as "id: Uuid", username, password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
+            SELECT id as "id: Uuid", username, role as "role: Role", password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             FROM users
             ORDER BY created_at DESC
             "#
@@ -91,7 +91,7 @@ impl UserRepository for SqliteUserRepo {
             r#"
             INSERT INTO users (id, username, password_hash, email, created_at)
             VALUES (?, ?, ?, ?, ?)
-            RETURNING id as "id: Uuid", username, email, password_hash, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
+            RETURNING id as "id: Uuid", username, email, role as "role: Role", password_hash, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             "#,
             id,
             user.username,
@@ -115,7 +115,7 @@ impl UserRepository for SqliteUserRepo {
         let user = sqlx::query_as!(
             User,
             r#"
-            SELECT id as "id: Uuid", username, password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
+            SELECT id as "id: Uuid", username, role as "role: Role",password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             FROM users
             WHERE id = ?
             "#,
@@ -131,7 +131,7 @@ impl UserRepository for SqliteUserRepo {
         let user = sqlx::query_as!(
             User,
             r#"
-            SELECT id as "id: Uuid", username, password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
+            SELECT id as "id: Uuid", username, role as "role: Role", password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             FROM users
             WHERE username = ?
             "#,
@@ -151,7 +151,7 @@ impl UserRepository for SqliteUserRepo {
             UPDATE users
             SET username = ?, password_hash = ?, email = ?, updated_at = ?
             WHERE id = ?
-            RETURNING id as "id: Uuid", username, password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
+            RETURNING id as "id: Uuid", username, role as "role: Role", password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             "#,
             user.username,
             user.password_hash,

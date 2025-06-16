@@ -37,8 +37,8 @@ async fn login(
         return Err(ApiError::Unauthorized("Invalid credentials".to_string()));
     }
 
-    let token =
-        create_jwt_token(user.id, &settings.jwt_secret).map_err(|_| ApiError::InternalError)?;
+    let token = create_jwt_token(user.id, &user.role, &settings.jwt_secret)
+        .map_err(|_| ApiError::InternalError)?;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({ "token": token })))
 }

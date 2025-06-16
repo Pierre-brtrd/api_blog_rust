@@ -1,4 +1,4 @@
-use crate::config::settings::Settings;
+use crate::{config::settings::Settings, domain::user::Role};
 use actix_web::{Error, HttpMessage, HttpResponse, dev::ServiceRequest, error::InternalError, web};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use anyhow::Result;
@@ -9,12 +9,12 @@ use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
-    sub: String, // user_id
-    exp: usize,  // timestamp
+    sub: String,
+    exp: usize,
+    role: String,
 }
 
-/// Génère un JWT pour `user_id`, valide 24 h
-pub fn create_jwt_token(user_id: Uuid, secret: &str) -> Result<String> {
+pub fn create_jwt_token(user_id: Uuid, role: &Role, secret: &str) -> Result<String> {
     let exp = Utc::now()
         .checked_add_signed(Duration::hours(24))
         .expect("timestamp")
@@ -23,6 +23,10 @@ pub fn create_jwt_token(user_id: Uuid, secret: &str) -> Result<String> {
     let claims = Claims {
         sub: user_id.to_string(),
         exp,
+        role: match role {
+            Role::User => "User".to_string(),
+            Role::Admin => "Admin".to_string(),
+        },
     };
     Ok(encode(
         &Header::default(),
@@ -31,7 +35,6 @@ pub fn create_jwt_token(user_id: Uuid, secret: &str) -> Result<String> {
     )?)
 }
 
-/// Vérifie le token et renvoie l’UUID du user
 pub fn verify_jwt(token: &str, secret: &str) -> Result<Uuid> {
     let data = decode::<Claims>(
         token,
@@ -41,15 +44,10 @@ pub fn verify_jwt(token: &str, secret: &str) -> Result<Uuid> {
     Ok(Uuid::parse_str(&data.claims.sub)?)
 }
 
-/// Middleware “validator” : extrait Authorization Bearer,
-/// vérifie le JWT et, en cas d’échec, renvoie un 401 JSON.
-///
-/// Inspiré de Auth0 tuto :contentReference[oaicite:0]{index=0}
 pub async fn jwt_validator(
     req: ServiceRequest,
     creds: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    // Récupérer la config Settings injectée plus tard dans App::data(...)
     let settings = if let Some(s) = req.app_data::<web::Data<Settings>>() {
         s.get_ref()
     } else {
@@ -59,10 +57,8 @@ pub async fn jwt_validator(
         return Err((err, req));
     };
 
-    // Vérifier le token
     match verify_jwt(creds.token(), &settings.jwt_secret) {
         Ok(user_id) => {
-            // on stocke l’UUID dans les extensions pour les handlers
             req.extensions_mut().insert(user_id);
             Ok(req)
         }

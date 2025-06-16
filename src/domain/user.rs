@@ -8,6 +8,13 @@ use crate::{
     domain::validation::{PasswordRequirements, validate_password},
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum Role {
+    User,
+    Admin,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
@@ -16,6 +23,7 @@ pub struct User {
     pub email: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
+    pub role: Role,
 }
 
 #[derive(Debug, Serialize)]
