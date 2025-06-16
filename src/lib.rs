@@ -16,8 +16,11 @@ pub mod domain {
     pub mod error;
     pub mod post;
     pub mod repository;
+    pub mod user;
+    pub mod validation;
 }
 
 pub mod infra {
     pub mod sqlite_post_repo;
+    pub mod sqlite_user_repo;
 }

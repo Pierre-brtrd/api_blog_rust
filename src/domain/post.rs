@@ -17,6 +17,7 @@ pub struct NewPost {
     pub title: String,
     pub content: String,
     pub published: bool,
+    pub user_id: Uuid,
 }
 
 #[derive(Debug, Deserialize)]

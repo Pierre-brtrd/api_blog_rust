@@ -7,6 +7,7 @@ use api_back_trio::core::db::init_db;
 use api_back_trio::core::server::AppState;
 use api_back_trio::core::tls::build_ssl_acceptor;
 use api_back_trio::infra::sqlite_post_repo::SqlitePostRepo;
+use api_back_trio::infra::sqlite_user_repo::SqliteUserRepo;
 use env_logger::Env;
 
 #[actix_web::main]
@@ -15,8 +16,10 @@ async fn main() -> Result<()> {
 
     let settings = Settings::from_env()?;
     let pool = init_db(&settings.database_url).await?;
-    let repo = SqlitePostRepo::new(pool.clone());
-    let state = AppState::new(repo);
+    let post_repo = SqlitePostRepo::new(pool.clone());
+    let user_repo = SqliteUserRepo::new(pool.clone());
+
+    let state = AppState::new(post_repo, user_repo);
     let ssl = build_ssl_acceptor(
         settings.tls.as_ref().unwrap().cert_path.as_str(),
         settings.tls.as_ref().unwrap().key_path.as_str(),

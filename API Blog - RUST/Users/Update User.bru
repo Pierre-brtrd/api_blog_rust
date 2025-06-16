@@ -1,0 +1,18 @@
+meta {
+  name: Update User
+  type: http
+  seq: 2
+}
+
+patch {
+  url: https://localhost:8080/users/2b18cdb8-4b05-45a8-adfd-aa2746d24ff6
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "Pierre_brtrd",
+    "email": "paul@test.com"
+  }
+}

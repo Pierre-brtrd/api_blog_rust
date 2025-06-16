@@ -52,7 +52,6 @@ impl PostRepository for SqlitePostRepo {
     }
 
     async fn create(&self, new_post: NewPost) -> Result<Post, anyhow::Error> {
-        // Verifications
         if new_post.title.trim().is_empty() {
             return Err(DomainError::EmptyContent.into());
         }

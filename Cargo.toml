@@ -19,3 +19,8 @@ anyhow = "1.0.98"
 openssl = "0.10"            # pour la gestion des certificats SSL
 config = "0.15.11"
 env_logger = "0.11.8"
+argon2 = "0.5"
+rand = "0.8"
+rand_chacha = "0.3"
+validator = { version = "0.20", features = ["derive"] }
+validator_derive = "0.20.0"

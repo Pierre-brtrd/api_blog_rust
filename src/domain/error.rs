@@ -12,4 +12,8 @@ pub enum DomainError {
     DatabaseError(#[from] sqlx::Error),
     #[error("Ressource non trouvée")]
     NotFound,
+    #[error("L'ID de l'utilisateur est invalide")]
+    InvalidUserId,
+    #[error("Erreur de hachage de mot de passe")]
+    PasswordHashingError(String),
 }

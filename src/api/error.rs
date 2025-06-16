@@ -6,7 +6,7 @@ use thiserror::Error;
 pub enum ApiError {
     #[error("Ressource not found")]
     NotFound,
-    #[error("Invalid request: {0}")]
+    #[error("{0}")]
     BadRequest(String),
     #[error("Internal server error")]
     InternalError,
