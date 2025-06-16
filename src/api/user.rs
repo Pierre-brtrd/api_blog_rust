@@ -1,6 +1,6 @@
 use crate::{
     api::error::ApiError,
-    core::server::AppState,
+    core::{auth::jwt_validator, server::AppState},
     domain::{
         error::DomainError,
         repository::UserRepository,
@@ -10,11 +10,13 @@ use crate::{
     infra::sqlite_user_repo::{SqliteUserRepo, hash_password},
 };
 use actix_web::{HttpResponse, web};
+use actix_web_httpauth::middleware::HttpAuthentication;
 use uuid::Uuid;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/users")
+            .wrap(HttpAuthentication::bearer(jwt_validator))
             .route("", web::get().to(list_users::<SqliteUserRepo>))
             .route("", web::post().to(create_user::<SqliteUserRepo>))
             .route("/{id}", web::get().to(get_user::<SqliteUserRepo>))
