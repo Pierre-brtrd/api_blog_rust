@@ -1,0 +1,11 @@
+meta {
+  name: Get list of users
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://localhost:8080/users
+  body: none
+  auth: inherit
+}
