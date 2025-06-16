@@ -24,3 +24,4 @@ rand = "0.8"
 rand_chacha = "0.3"
 validator = { version = "0.20", features = ["derive"] }
 validator_derive = "0.20.0"
+jsonwebtoken = "9.3.1"

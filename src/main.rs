@@ -1,7 +1,7 @@
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer, web};
 use anyhow::Result;
-use api_back_trio::api::handlers::config;
+use api_back_trio::api::config as api_config;
 use api_back_trio::config::settings::Settings;
 use api_back_trio::core::db::init_db;
 use api_back_trio::core::server::AppState;
@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
         App::new()
             .wrap(Logger::default())
             .app_data(web::Data::new(state.clone()))
-            .configure(config)
+            .configure(api_config)
     })
     .bind_openssl((settings.server.host.as_str(), settings.server.port), ssl)?
     .run()

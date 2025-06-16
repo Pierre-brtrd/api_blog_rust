@@ -77,7 +77,7 @@ impl UserRepository for SqliteUserRepo {
             .as_deref()
             .ok_or_else(|| DomainError::EmptyContent)?;
 
-        let hashed = hash_password(&password)
+        let hashed = hash_password(password)
             .map_err(|e| DomainError::PasswordHashingError(e.to_string()))?;
 
         let user = NewUser {
