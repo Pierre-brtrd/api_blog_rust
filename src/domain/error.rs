@@ -1,0 +1,15 @@
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum DomainError {
+    #[error("Un titre doit contenir au moins 3 caractères")]
+    InvalidMinLentgthTitle,
+    #[error("Un titre doit contenir au maximum 255 caractères")]
+    InvalidMaxLentgthTitle,
+    #[error("Le contenu en doit pas être vide")]
+    EmptyContent,
+    #[error("Erreur de base de données: {0}")]
+    DatabaseError(#[from] sqlx::Error),
+    #[error("Ressource non trouvée")]
+    NotFound,
+}

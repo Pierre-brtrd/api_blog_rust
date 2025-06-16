@@ -1,0 +1,19 @@
+meta {
+  name: Update Post
+  type: http
+  seq: 3
+}
+
+patch {
+  url: https://localhost:8080/posts/d9e22501-b035-4828-b42a-fe610198ec28
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "Titre mis à jour V3",
+    "content": "Contenu mis à jour v3",
+    "published": true
+  }
+}
