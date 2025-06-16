@@ -7,7 +7,7 @@ use crate::{
         user::{NewUser, UpdateUser},
         validation::{PasswordRequirements, validate_password},
     },
-    infra::sqlite_user_repo::{SqliteUserRepo, hash_password},
+    infra::sqlite_user_repo::hash_password,
 };
 use actix_web::{HttpResponse, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
@@ -17,15 +17,15 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/users")
             .wrap(HttpAuthentication::bearer(jwt_validator))
-            .route("", web::get().to(list_users::<SqliteUserRepo>))
-            .route("", web::post().to(create_user::<SqliteUserRepo>))
-            .route("/{id}", web::get().to(get_user::<SqliteUserRepo>))
-            .route("/{id}", web::patch().to(update_user::<SqliteUserRepo>))
-            .route("/{id}", web::delete().to(delete_user::<SqliteUserRepo>)),
+            .route("", web::get().to(list_users))
+            .route("", web::post().to(create_user))
+            .route("/{id}", web::get().to(get_user))
+            .route("/{id}", web::patch().to(update_user))
+            .route("/{id}", web::delete().to(delete_user)),
     );
 }
 
-async fn list_users<UserRepository>(state: web::Data<AppState>) -> Result<HttpResponse, ApiError> {
+async fn list_users(state: web::Data<AppState>) -> Result<HttpResponse, ApiError> {
     let users = state
         .user_repo
         .list()
@@ -35,7 +35,7 @@ async fn list_users<UserRepository>(state: web::Data<AppState>) -> Result<HttpRe
     Ok(HttpResponse::Ok().json(users))
 }
 
-async fn get_user<UserRepository>(
+async fn get_user(
     state: web::Data<AppState>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {
@@ -48,7 +48,7 @@ async fn get_user<UserRepository>(
     }
 }
 
-async fn create_user<UserRepository>(
+async fn create_user(
     state: web::Data<AppState>,
     json: web::Json<NewUser>,
 ) -> Result<HttpResponse, ApiError> {
@@ -67,7 +67,7 @@ async fn create_user<UserRepository>(
         })
 }
 
-async fn update_user<UserRepository>(
+async fn update_user(
     state: web::Data<AppState>,
     path: web::Path<Uuid>,
     json: web::Json<UpdateUser>,
@@ -113,7 +113,7 @@ async fn update_user<UserRepository>(
     Ok(HttpResponse::Ok().json(updated))
 }
 
-async fn delete_user<UserRepository>(
+async fn delete_user(
     state: web::Data<AppState>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {

@@ -7,7 +7,6 @@ use crate::{
         post::{NewPost, Post, UpdatePost},
         repository::PostRepository,
     },
-    infra::sqlite_post_repo::SqlitePostRepo,
 };
 use actix_web::{HttpResponse, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
@@ -17,17 +16,15 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/posts")
             .wrap(HttpAuthentication::bearer(jwt_validator))
-            .route("", web::get().to(list_posts::<SqlitePostRepo>))
-            .route("", web::post().to(create_post::<SqlitePostRepo>))
-            .route("/{id}", web::get().to(get_post::<SqlitePostRepo>))
-            .route("/{id}", web::patch().to(update_post::<SqlitePostRepo>))
-            .route("/{id}", web::delete().to(delete_post::<SqlitePostRepo>)),
+            .route("", web::get().to(list_posts))
+            .route("", web::post().to(create_post))
+            .route("/{id}", web::get().to(get_post))
+            .route("/{id}", web::patch().to(update_post))
+            .route("/{id}", web::delete().to(delete_post)),
     );
 }
 
-async fn list_posts<R: PostRepository>(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, ApiError> {
+async fn list_posts(state: web::Data<AppState>) -> Result<HttpResponse, ApiError> {
     let posts = state
         .post_repo
         .list()
@@ -37,7 +34,7 @@ async fn list_posts<R: PostRepository>(
     Ok(HttpResponse::Ok().json(posts))
 }
 
-async fn get_post<R: PostRepository>(
+async fn get_post(
     state: web::Data<AppState>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {
@@ -50,7 +47,7 @@ async fn get_post<R: PostRepository>(
     }
 }
 
-async fn create_post<R: PostRepository>(
+async fn create_post(
     state: web::Data<AppState>,
     json: web::Json<NewPost>,
 ) -> Result<HttpResponse, ApiError> {
@@ -66,7 +63,7 @@ async fn create_post<R: PostRepository>(
         .map_err(|e| ApiError::BadRequest(e.to_string()))
 }
 
-async fn update_post<R: PostRepository>(
+async fn update_post(
     state: web::Data<AppState>,
     path: web::Path<Uuid>,
     json: web::Json<UpdatePost>,
@@ -120,7 +117,7 @@ async fn update_post<R: PostRepository>(
     Ok(HttpResponse::Ok().json(updated))
 }
 
-async fn delete_post<R: PostRepository>(
+async fn delete_post(
     state: web::Data<AppState>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {
