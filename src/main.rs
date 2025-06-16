@@ -25,13 +25,15 @@ async fn main() -> Result<()> {
         settings.tls.as_ref().unwrap().key_path.as_str(),
     )?;
 
+    let server_settings = settings.server.clone();
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .app_data(web::Data::new(state.clone()))
+            .app_data(web::Data::new(settings.clone()))
             .configure(api_config)
     })
-    .bind_openssl((settings.server.host.as_str(), settings.server.port), ssl)?
+    .bind_openssl((server_settings.host.as_str(), server_settings.port), ssl)?
     .run()
     .await?;
 

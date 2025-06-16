@@ -1,3 +1,4 @@
+use crate::core::auth::jwt_validator;
 use crate::{
     api::error::ApiError,
     core::server::AppState,
@@ -9,11 +10,13 @@ use crate::{
     infra::sqlite_post_repo::SqlitePostRepo,
 };
 use actix_web::{HttpResponse, web};
+use actix_web_httpauth::middleware::HttpAuthentication;
 use uuid::Uuid;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/posts")
+            .wrap(HttpAuthentication::bearer(jwt_validator))
             .route("", web::get().to(list_posts::<SqlitePostRepo>))
             .route("", web::post().to(create_post::<SqlitePostRepo>))
             .route("/{id}", web::get().to(get_post::<SqlitePostRepo>))

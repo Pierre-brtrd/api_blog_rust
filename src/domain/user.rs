@@ -89,8 +89,34 @@ impl UpdateUser {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
+pub struct RawLoginRequest {
+    #[validate(required(message = "Username obligatoire"))]
+    pub username: Option<String>,
+    #[validate(required(message = "Password obligatoire"))]
+    pub password: Option<String>,
+}
+
+impl RawLoginRequest {
+    pub fn validate_login(&self) -> Result<(), ApiError> {
+        self.validate()
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        Ok(())
+    }
+}
+
 pub struct LoginUser {
     pub username: String,
     pub password: String,
+}
+
+impl TryFrom<RawLoginRequest> for LoginUser {
+    type Error = ApiError;
+
+    fn try_from(raw: RawLoginRequest) -> Result<Self, ApiError> {
+        Ok(LoginUser {
+            username: raw.username.unwrap(),
+            password: raw.password.unwrap(),
+        })
+    }
 }

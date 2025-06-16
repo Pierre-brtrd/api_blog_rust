@@ -6,13 +6,15 @@ pub mod core {
 }
 pub mod api {
     pub mod error;
+    pub mod login;
     pub mod post;
     pub mod user;
+
     pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
         user::config(cfg);
         post::config(cfg);
+        login::config(cfg);
     }
-    // pub mod handlers;
 }
 
 pub mod config {

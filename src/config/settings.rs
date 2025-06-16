@@ -1,22 +1,23 @@
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct ServerSettings {
     pub host: String,
     pub port: u16,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct TlsSettings {
     pub cert_path: String,
     pub key_path: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Settings {
     pub database_url: String,
     pub server: ServerSettings,
     pub tls: Option<TlsSettings>,
+    pub jwt_secret: String,
 }
 
 impl Settings {

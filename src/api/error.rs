@@ -10,6 +10,8 @@ pub enum ApiError {
     BadRequest(String),
     #[error("Internal server error")]
     InternalError,
+    #[error("{0}")]
+    Unauthorized(String),
 }
 
 #[derive(Serialize)]
@@ -23,6 +25,7 @@ impl ResponseError for ApiError {
             ApiError::NotFound => StatusCode::NOT_FOUND,
             ApiError::BadRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
         }
     }
 
