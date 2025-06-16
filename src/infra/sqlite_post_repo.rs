@@ -1,7 +1,8 @@
 use crate::domain::{
     error::DomainError,
-    post::{NewPost, Post},
+    post::{NewPost, Post, PostWithAuthor},
     repository::PostRepository,
+    user::UserPublic,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -21,63 +22,98 @@ impl SqlitePostRepo {
 
 #[async_trait]
 impl PostRepository for SqlitePostRepo {
-    async fn list(&self) -> Result<Vec<Post>, anyhow::Error> {
-        let rows = sqlx::query_as!(
-            Post,
+    async fn list(&self) -> Result<Vec<PostWithAuthor>, anyhow::Error> {
+        let rows = sqlx::query!(
             r#"
-            SELECT id as "id: Uuid", title, content, published as "published: bool", created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
-            FROM posts
-            ORDER BY created_at DESC
+                SELECT 
+                p.id as "post_id: Uuid",
+                p.title,
+                p.content,
+                p.published as "published: bool",
+                p.created_at as "created_at: DateTime<Utc>",
+                p.updated_at as "updated_at: DateTime<Utc>",
+
+                u.id as "user_id: Uuid",
+                u.username,
+                u.email
+                FROM posts p
+                JOIN users u ON p.user_id = u.id
+                ORDER BY p.created_at DESC
             "#
         )
         .fetch_all(&self.pool)
         .await?;
-        Ok(rows)
+
+        let posts = rows
+            .into_iter()
+            .map(|row| PostWithAuthor {
+                id: row.post_id.expect("Post ID is required"),
+                title: row.title.expect("Title is required"),
+                content: row.content.expect("Content is required"),
+                published: row.published.expect("Published status is required"),
+                created_at: row.created_at.expect("Created at is required"),
+                updated_at: row.updated_at,
+                author: UserPublic {
+                    id: row.user_id,
+                    username: row.username.clone(),
+                    email: row.email.clone(),
+                },
+            })
+            .collect();
+
+        Ok(posts)
     }
 
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Post>, anyhow::Error> {
-        let row = sqlx::query_as!(
-            Post,
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<PostWithAuthor>, anyhow::Error> {
+        let row = sqlx::query!(
             r#"
-            SELECT id as "id: Uuid", title, content, published as "published: bool", created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
-            FROM posts
-            WHERE id = ?
+            SELECT 
+            p.id as "post_id: Uuid", 
+            p.title, content, 
+            p.published as "published: bool", 
+            p.created_at as "created_at: DateTime<Utc>", 
+            p.updated_at as "updated_at: DateTime<Utc>",
+            u.id as "user_id: Uuid",
+            u.username,
+            u.email
+            FROM posts p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.id = ?
             "#,
             id
         )
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row)
+        let post_with_author = row.map(|row| PostWithAuthor {
+            id: row.post_id,
+            title: row.title,
+            content: row.content,
+            published: row.published,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            author: UserPublic {
+                id: row.user_id,
+                username: row.username.clone(),
+                email: row.email.clone(),
+            },
+        });
+
+        Ok(post_with_author)
     }
 
     async fn create(&self, new_post: NewPost) -> Result<Post, anyhow::Error> {
-        if new_post.title.trim().is_empty() {
-            return Err(DomainError::EmptyContent.into());
-        }
-
-        if new_post.title.trim().len() < 3 {
-            return Err(DomainError::InvalidMinLentgthTitle.into());
-        }
-
-        if new_post.title.trim().len() > 255 {
-            return Err(DomainError::InvalidMaxLentgthTitle.into());
-        }
-
-        if new_post.content.trim().is_empty() {
-            return Err(DomainError::EmptyContent.into());
-        }
-
         let id = Uuid::new_v4();
         let now = Utc::now();
 
         sqlx::query_as!(
             Post,
             r#"
-            INSERT INTO posts (id, title, content, published, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO posts (id, user_id, title, content, published, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             "#,
             id,
+            new_post.user_id,
             new_post.title,
             new_post.content,
             new_post.published,
@@ -88,8 +124,9 @@ impl PostRepository for SqlitePostRepo {
 
         Ok(Post {
             id,
-            title: new_post.title,
-            content: new_post.content,
+            user_id: new_post.user_id.unwrap_or(Uuid::nil()),
+            title: new_post.title.unwrap_or_default(),
+            content: new_post.content.unwrap_or_default(),
             published: new_post.published,
             created_at: now,
             updated_at: None,
@@ -102,12 +139,14 @@ impl PostRepository for SqlitePostRepo {
         sqlx::query!(
             r#"
             UPDATE posts SET
+                user_id = ?,
                 title = ?,
                 content = ?,
                 published = ?,
                 updated_at = ?
             WHERE id = ?
             "#,
+            post.user_id,
             post.title,
             post.content,
             post.published,

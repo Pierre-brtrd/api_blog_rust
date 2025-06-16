@@ -3,7 +3,7 @@ use crate::{
     core::server::AppState,
     domain::{
         error::DomainError,
-        post::{NewPost, UpdatePost},
+        post::{NewPost, Post, UpdatePost},
         repository::{PostRepository, UserRepository},
         user::{NewUser, UpdateUser},
         validation::{PasswordRequirements, validate_password},
@@ -65,6 +65,9 @@ async fn create_post<R: PostRepository>(
     json: web::Json<NewPost>,
 ) -> Result<HttpResponse, ApiError> {
     let new = json.into_inner();
+    new.validate_post()
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
     state
         .post_repo
         .create(new)
@@ -80,24 +83,43 @@ async fn update_post<R: PostRepository>(
 ) -> Result<HttpResponse, ApiError> {
     let id = path.into_inner();
 
-    let mut post = state
+    let mut post_to_update = state
         .post_repo
         .find_by_id(id)
         .await
         .map_err(|_| ApiError::InternalError)?
         .ok_or(ApiError::NotFound)?;
 
-    if let Some(title) = &json.title {
-        post.title = title.clone();
+    let update = json.into_inner();
+    update
+        .validate_post()
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    if let Some(title) = &update.title {
+        post_to_update.title = title.clone();
     }
 
-    if let Some(content) = &json.content {
-        post.content = content.clone();
+    if let Some(content) = &update.content {
+        post_to_update.content = content.clone();
     }
 
-    if let Some(published) = json.published {
-        post.published = published;
+    if let Some(published) = update.published {
+        post_to_update.published = published;
     }
+
+    if let Some(user_id) = update.user_id {
+        post_to_update.author.id = user_id;
+    }
+
+    let post = Post {
+        id: post_to_update.id,
+        user_id: post_to_update.author.id,
+        title: post_to_update.title,
+        content: post_to_update.content,
+        published: post_to_update.published,
+        created_at: post_to_update.created_at,
+        updated_at: Some(chrono::Utc::now()),
+    };
 
     let updated = state
         .post_repo

@@ -18,6 +18,13 @@ pub struct User {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct UserPublic {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+}
+
 #[derive(Debug, Deserialize, Validate)]
 pub struct NewUser {
     #[validate(
