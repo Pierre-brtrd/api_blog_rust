@@ -1,7 +1,8 @@
 pub mod core {
     pub mod auth;
     pub mod db;
-    pub mod server;
+    pub mod jwt_middleware;
+    pub mod keys;
     pub mod tls;
 }
 pub mod api {

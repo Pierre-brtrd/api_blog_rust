@@ -1,22 +1,21 @@
 use crate::{
     api::error::ApiError,
-    core::{auth::jwt_validator, server::AppState},
+    core::jwt_middleware::JwtMiddleware,
     domain::{
         error::DomainError,
         repository::UserRepository,
         user::{NewUser, UpdateUser},
         validation::{PasswordRequirements, validate_password},
     },
-    infra::sqlite_user_repo::hash_password,
+    infra::sqlite_user_repo::{SqliteUserRepo, hash_password},
 };
 use actix_web::{HttpResponse, web};
-use actix_web_httpauth::middleware::HttpAuthentication;
 use uuid::Uuid;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/users")
-            .wrap(HttpAuthentication::bearer(jwt_validator))
+            .wrap(JwtMiddleware::new())
             .route("", web::get().to(list_users))
             .route("", web::post().to(create_user))
             .route("/{id}", web::get().to(get_user))
@@ -25,23 +24,19 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list_users(state: web::Data<AppState>) -> Result<HttpResponse, ApiError> {
-    let users = state
-        .user_repo
-        .list()
-        .await
-        .map_err(|_| ApiError::InternalError)?;
+async fn list_users(repo: web::Data<SqliteUserRepo>) -> Result<HttpResponse, ApiError> {
+    let users = repo.list().await.map_err(|_| ApiError::InternalError)?;
 
     Ok(HttpResponse::Ok().json(users))
 }
 
 async fn get_user(
-    state: web::Data<AppState>,
+    repo: web::Data<SqliteUserRepo>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {
     let id = id.into_inner();
 
-    match state.user_repo.find_by_id(id).await {
+    match repo.find_by_id(id).await {
         Ok(Some(user)) => Ok(HttpResponse::Ok().json(user)),
         Ok(None) => Err(ApiError::NotFound),
         Err(_) => Err(ApiError::InternalError),
@@ -49,7 +44,7 @@ async fn get_user(
 }
 
 async fn create_user(
-    state: web::Data<AppState>,
+    repo: web::Data<SqliteUserRepo>,
     json: web::Json<NewUser>,
 ) -> Result<HttpResponse, ApiError> {
     let new = json.into_inner();
@@ -57,9 +52,7 @@ async fn create_user(
     new.validate_user()
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    state
-        .user_repo
-        .create(new)
+    repo.create(new)
         .await
         .map(|user| HttpResponse::Created().json(user))
         .map_err(|e| {
@@ -68,14 +61,13 @@ async fn create_user(
 }
 
 async fn update_user(
-    state: web::Data<AppState>,
+    repo: web::Data<SqliteUserRepo>,
     path: web::Path<Uuid>,
     json: web::Json<UpdateUser>,
 ) -> Result<HttpResponse, ApiError> {
     let id = path.into_inner();
 
-    let mut user = state
-        .user_repo
+    let mut user = repo
         .find_by_id(id)
         .await
         .map_err(|_| ApiError::InternalError)?
@@ -104,8 +96,7 @@ async fn update_user(
         user.password_hash = hashed;
     }
 
-    let updated = state
-        .user_repo
+    let updated = repo
         .update(user)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
@@ -114,12 +105,12 @@ async fn update_user(
 }
 
 async fn delete_user(
-    state: web::Data<AppState>,
+    repo: web::Data<SqliteUserRepo>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {
     let id = id.into_inner();
 
-    match state.user_repo.delete(id).await {
+    match repo.delete(id).await {
         Ok(()) => Ok(HttpResponse::NoContent().finish()),
         Err(DomainError::NotFound) => Err(ApiError::NotFound),
         Err(_) => Err(ApiError::InternalError),

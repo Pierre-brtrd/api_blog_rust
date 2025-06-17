@@ -1,12 +1,11 @@
 use crate::{
     api::error::ApiError,
-    config::settings::Settings,
-    core::{auth::create_jwt_token, server::AppState},
+    core::{auth::create_jwt_token, keys::Keys},
     domain::{
         repository::UserRepository,
         user::{LoginUser, RawLoginRequest},
     },
-    infra::sqlite_user_repo::verify_password,
+    infra::sqlite_user_repo::{SqliteUserRepo, verify_password},
 };
 use actix_web::{HttpResponse, web};
 
@@ -16,16 +15,15 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 
 async fn login(
     raw: web::Json<RawLoginRequest>,
-    state: web::Data<AppState>,
-    settings: web::Data<Settings>,
+    repo: web::Data<SqliteUserRepo>,
+    keys: web::Data<Keys>,
 ) -> Result<HttpResponse, ApiError> {
     raw.validate_login()
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let login: LoginUser = raw.into_inner().try_into()?;
 
-    let user = state
-        .user_repo
+    let user = repo
         .find_by_username(&login.username)
         .await
         .map_err(|_| ApiError::InternalError)?
@@ -37,8 +35,7 @@ async fn login(
         return Err(ApiError::Unauthorized("Invalid credentials".to_string()));
     }
 
-    let token = create_jwt_token(user.id, &user.role, &settings.jwt_secret)
-        .map_err(|_| ApiError::InternalError)?;
+    let token = create_jwt_token(user.id, user.role, &keys).map_err(|_| ApiError::InternalError)?;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({ "token": token })))
 }

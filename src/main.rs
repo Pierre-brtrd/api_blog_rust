@@ -4,7 +4,7 @@ use anyhow::Result;
 use api_back_trio::api::config as api_config;
 use api_back_trio::config::settings::Settings;
 use api_back_trio::core::db::init_db;
-use api_back_trio::core::server::AppState;
+use api_back_trio::core::keys::Keys;
 use api_back_trio::core::tls::build_ssl_acceptor;
 use api_back_trio::infra::sqlite_post_repo::SqlitePostRepo;
 use api_back_trio::infra::sqlite_user_repo::SqliteUserRepo;
@@ -18,8 +18,8 @@ async fn main() -> Result<()> {
     let pool = init_db(&settings.database_url).await?;
     let post_repo = SqlitePostRepo::new(pool.clone());
     let user_repo = SqliteUserRepo::new(pool.clone());
+    let keys = Keys::new(settings.jwt_secret.as_bytes());
 
-    let state = AppState::new(post_repo, user_repo);
     let ssl = build_ssl_acceptor(
         settings.tls.as_ref().unwrap().cert_path.as_str(),
         settings.tls.as_ref().unwrap().key_path.as_str(),
@@ -29,7 +29,9 @@ async fn main() -> Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .app_data(web::Data::new(state.clone()))
+            .app_data(web::Data::new(post_repo.clone()))
+            .app_data(web::Data::new(user_repo.clone()))
+            .app_data(web::Data::new(keys.clone()))
             .app_data(web::Data::new(settings.clone()))
             .configure(api_config)
     })

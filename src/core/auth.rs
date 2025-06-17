@@ -1,72 +1,98 @@
-use crate::{config::settings::Settings, domain::user::Role};
-use actix_web::{Error, HttpMessage, HttpResponse, dev::ServiceRequest, error::InternalError, web};
-use actix_web_httpauth::extractors::bearer::BearerAuth;
-use anyhow::Result;
+use actix_web::{
+    Error, FromRequest, HttpRequest, HttpResponse, ResponseError,
+    dev::Payload,
+    http::{StatusCode, header::AUTHORIZATION},
+    web,
+};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use core::fmt;
+use jsonwebtoken::{Header, errors::Error as JwtError};
+use jsonwebtoken::{Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::future::{Ready, ready};
 use uuid::Uuid;
 
+use crate::{core::keys::Keys, domain::user::Role};
+
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
+pub struct Claims {
     sub: String,
     exp: usize,
-    role: String,
+    role: Role,
 }
 
-pub fn create_jwt_token(user_id: Uuid, role: &Role, secret: &str) -> Result<String> {
+#[derive(Debug)]
+pub enum AuthError {
+    MissingAuth,
+    InvalidToken,
+}
+
+impl fmt::Display for AuthError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let msg = match self {
+            AuthError::MissingAuth => "Authorization header is missing",
+            AuthError::InvalidToken => "Invalid or expired token",
+        };
+        write!(f, "{}", msg)
+    }
+}
+
+impl ResponseError for AuthError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            AuthError::MissingAuth => StatusCode::UNAUTHORIZED,
+            AuthError::InvalidToken => StatusCode::FORBIDDEN,
+        }
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        let msg = self.to_string();
+        HttpResponse::build(self.status_code()).json(json!({"error": msg}))
+    }
+}
+
+impl FromRequest for Claims {
+    type Error = Error;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let keys_data = req
+            .app_data::<web::Data<Keys>>()
+            .map(|k| k.get_ref().clone());
+
+        let token_opt = req
+            .headers()
+            .get(AUTHORIZATION)
+            .and_then(|h| h.to_str().ok())
+            .and_then(|s| s.strip_prefix("Bearer ").map(str::to_owned));
+
+        // Validate the presence of settings and header token
+        let (keys, token) = match (keys_data, token_opt) {
+            (Some(k), Some(t)) => (k, t),
+            _ => return ready(Err(AuthError::MissingAuth.into())),
+        };
+
+        // Decode and validate the JWT token
+        let res = decode::<Claims>(&token, &keys.decoding, &Validation::default())
+            .map(|data| data.claims)
+            .map_err(|_| AuthError::InvalidToken.into());
+
+        ready(res)
+    }
+}
+
+pub fn create_jwt_token(user_id: Uuid, role: Role, keys: &Keys) -> Result<String, JwtError> {
     let exp = Utc::now()
         .checked_add_signed(Duration::hours(24))
-        .expect("timestamp")
+        .expect("Failed to calculate expiration time")
         .timestamp() as usize;
 
     let claims = Claims {
         sub: user_id.to_string(),
         exp,
-        role: match role {
-            Role::User => "User".to_string(),
-            Role::Admin => "Admin".to_string(),
-        },
-    };
-    Ok(encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(secret.as_ref()),
-    )?)
-}
-
-pub fn verify_jwt(token: &str, secret: &str) -> Result<Uuid> {
-    let data = decode::<Claims>(
-        token,
-        &DecodingKey::from_secret(secret.as_ref()),
-        &Validation::default(),
-    )?;
-    Ok(Uuid::parse_str(&data.claims.sub)?)
-}
-
-pub async fn jwt_validator(
-    req: ServiceRequest,
-    creds: BearerAuth,
-) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    let settings = if let Some(s) = req.app_data::<web::Data<Settings>>() {
-        s.get_ref()
-    } else {
-        let body = HttpResponse::InternalServerError()
-            .json(serde_json::json!({ "error": "Invalid token JWT" }));
-        let err: Error = InternalError::from_response("", body).into();
-        return Err((err, req));
+        role: role,
     };
 
-    match verify_jwt(creds.token(), &settings.jwt_secret) {
-        Ok(user_id) => {
-            req.extensions_mut().insert(user_id);
-            Ok(req)
-        }
-        Err(_) => {
-            let body = HttpResponse::Unauthorized()
-                .json(serde_json::json!({ "error": "Invalid or expired token" }));
-            let err: Error = InternalError::from_response("", body).into();
-            Err((err, req))
-        }
-    }
+    encode(&Header::default(), &claims, &keys.encoding)
 }

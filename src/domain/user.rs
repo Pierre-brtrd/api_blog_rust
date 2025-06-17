@@ -1,3 +1,5 @@
+use core::fmt;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -13,6 +15,17 @@ use crate::{
 pub enum Role {
     User,
     Admin,
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let role_str = match self {
+            Role::User => "ser",
+            Role::Admin => "admin",
+        };
+
+        write!(f, "{}", role_str)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,7 +135,7 @@ impl TryFrom<RawLoginRequest> for LoginUser {
     type Error = ApiError;
 
     fn try_from(raw: RawLoginRequest) -> Result<Self, ApiError> {
-        Ok(LoginUser {
+        Ok(Self {
             username: raw.username.unwrap(),
             password: raw.password.unwrap(),
         })
