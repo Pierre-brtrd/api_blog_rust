@@ -149,7 +149,7 @@ impl UserRepository for SqliteUserRepo {
             User,
             r#"
             UPDATE users
-            SET username = ?, password_hash = ?, email = ?, updated_at = ?
+            SET username = ?, password_hash = ?, email = ?, updated_at = ?, role = ?
             WHERE id = ?
             RETURNING id as "id: Uuid", username, role as "role: Role", password_hash, email, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             "#,
@@ -157,6 +157,7 @@ impl UserRepository for SqliteUserRepo {
             user.password_hash,
             user.email,
             now,
+            user.role,
             user.id
         )
         .fetch_one(&self.pool)

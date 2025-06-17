@@ -17,9 +17,9 @@ use crate::{core::keys::Keys, domain::user::Role};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
-    exp: usize,
-    role: Role,
+    pub sub: String,
+    pub exp: usize,
+    pub role: Role,
 }
 
 #[derive(Debug)]

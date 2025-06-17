@@ -1,4 +1,4 @@
-use crate::core::jwt_middleware::JwtMiddleware;
+use crate::core::middlewares::jwt::JwtMiddleware;
 use crate::infra::sqlite_post_repo::SqlitePostRepo;
 use crate::{
     api::error::ApiError,

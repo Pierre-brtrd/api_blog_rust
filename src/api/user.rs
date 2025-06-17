@@ -1,10 +1,12 @@
+use std::str::FromStr;
+
 use crate::{
     api::error::ApiError,
-    core::jwt_middleware::JwtMiddleware,
+    core::middlewares::{admin::AdminMiddleware, jwt::JwtMiddleware},
     domain::{
         error::DomainError,
         repository::UserRepository,
-        user::{NewUser, UpdateUser},
+        user::{NewUser, Role, UpdateUser},
         validation::{PasswordRequirements, validate_password},
     },
     infra::sqlite_user_repo::{SqliteUserRepo, hash_password},
@@ -16,6 +18,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/users")
             .wrap(JwtMiddleware::new())
+            .wrap(AdminMiddleware::new())
             .route("", web::get().to(list_users))
             .route("", web::post().to(create_user))
             .route("/{id}", web::get().to(get_user))
@@ -94,6 +97,11 @@ async fn update_user(
         let hashed = hash_password(password).map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
         user.password_hash = hashed;
+    }
+
+    if let Some(role_str) = &update.role {
+        user.role = Role::from_str(role_str)
+            .map_err(|_| ApiError::BadRequest("Invalid role".to_string()))?;
     }
 
     let updated = repo

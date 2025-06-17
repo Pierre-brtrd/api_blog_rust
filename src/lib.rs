@@ -1,7 +1,11 @@
 pub mod core {
     pub mod auth;
     pub mod db;
-    pub mod jwt_middleware;
+    pub mod middlewares {
+        pub mod admin;
+        pub mod jwt;
+    }
+
     pub mod keys;
     pub mod tls;
 }

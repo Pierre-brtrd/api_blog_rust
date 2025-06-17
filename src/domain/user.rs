@@ -1,4 +1,5 @@
 use core::fmt;
+use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ use crate::{
     domain::validation::{PasswordRequirements, validate_password},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
 #[sqlx(type_name = "TEXT")]
 pub enum Role {
     User,
@@ -20,11 +21,23 @@ pub enum Role {
 impl fmt::Display for Role {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let role_str = match self {
-            Role::User => "ser",
+            Role::User => "user",
             Role::Admin => "admin",
         };
 
         write!(f, "{}", role_str)
+    }
+}
+
+impl FromStr for Role {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Admin" | "admin" => Ok(Role::Admin),
+            "User" | "user" => Ok(Role::User),
+            _ => Err(()),
+        }
     }
 }
 
@@ -94,6 +107,7 @@ pub struct UpdateUser {
     pub password: Option<String>,
     #[validate(email(message = "Email Invalide"))]
     pub email: Option<String>,
+    pub role: Option<String>,
 }
 
 impl UpdateUser {
