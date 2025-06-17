@@ -1,0 +1,22 @@
+meta {
+  name: Update profile
+  type: http
+  seq: 3
+}
+
+patch {
+  url: https://localhost:8080/api/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyYjE4Y2RiOC00YjA1LTQ1YTgtYWRmZC1hYTI3NDZkMjRmZjYiLCJleHAiOjE3NTAyNjk5MzIsInJvbGUiOiJBZG1pbiJ9.6NWMv-wM8DOZHZAwCD2vK1DmNzwGirqaM7PNvk69t3s
+}
+
+body:json {
+  {
+    "username": "Pierre_brtrd",
+    "email": "pierre@test.com"
+  }
+}

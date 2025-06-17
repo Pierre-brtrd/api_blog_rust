@@ -5,6 +5,7 @@ use crate::{
         validation::{require_field, require_password, validate_dto},
     },
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -14,6 +15,8 @@ pub struct UserPublic {
     pub id: Uuid,
     pub username: String,
     pub email: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
 }
 
 impl From<User> for UserPublic {
@@ -22,6 +25,7 @@ impl From<User> for UserPublic {
             id: user.id,
             username: user.username,
             email: user.email,
+            created_at: user.created_at,
         }
     }
 }
@@ -112,6 +116,56 @@ impl UpdateUser {
             password,
             email: self.email,
             role: self.role,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct UpdateProfile {
+    #[validate(length(
+        min = 3,
+        max = 255,
+        message = "Username must be between 3 and 255 characters"
+    ))]
+    pub username: Option<String>,
+    #[validate(email(message = "Email Invalide"))]
+    pub email: Option<String>,
+    pub plain_password: Option<String>,
+    pub confirm_password: Option<String>,
+}
+
+impl UpdateProfile {
+    pub fn validate_user(&self) -> Result<(), ApiError> {
+        validate_dto(self)?;
+
+        if self.plain_password.is_some() || self.confirm_password.is_some() {
+            if self.plain_password != self.confirm_password {
+                return Err(ApiError::BadRequest("Passwords do not match".to_string()));
+            }
+            let _pwd = require_password(self.plain_password.clone())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_and_into_domain(self) -> Result<UpdateUserPayload, ApiError> {
+        validate_dto(&self)?;
+
+        let password = if self.plain_password.is_some() {
+            if self.plain_password != self.confirm_password {
+                return Err(ApiError::BadRequest("Passwords do not match".to_string()));
+            }
+
+            Some(require_password(self.plain_password)?)
+        } else {
+            None
+        };
+
+        Ok(UpdateUserPayload {
+            username: self.username,
+            password: password,
+            email: self.email,
+            role: None,
         })
     }
 }

@@ -4,11 +4,11 @@ use crate::{
     application::user_service::UserService,
     domain::error::DomainError,
     infrastructure::{
-        auth::{admin::AdminMiddleware, jwt::JwtMiddleware},
+        auth::{Claims, admin::AdminMiddleware, jwt::JwtMiddleware},
         persistence::sqlite::user_repo::SqliteUserRepo,
     },
     interfaces::api::{
-        dto::user::{NewUser, UpdateUser, UserPublic},
+        dto::user::{NewUser, UpdateProfile, UpdateUser, UpdateUserPayload, UserPublic},
         error::ApiError,
     },
 };
@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/users")
+        web::scope("/api/users")
             .wrap(JwtMiddleware::new())
             .wrap(AdminMiddleware::new())
             .route("", web::get().to(list_users))
@@ -25,6 +25,11 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .route("/{id}", web::get().to(get_user))
             .route("/{id}", web::patch().to(update_user))
             .route("/{id}", web::delete().to(delete_user)),
+    )
+    .service(
+        web::scope("/api/profile")
+            .route("", web::get().to(get_profile))
+            .route("", web::patch().to(update_profile)),
     );
 }
 
@@ -95,4 +100,29 @@ async fn delete_user(
         Err(DomainError::NotFound) => Err(ApiError::NotFound),
         Err(_) => Err(ApiError::InternalError),
     }
+}
+
+async fn get_profile(
+    claims: Claims,
+    service: web::Data<UserService<SqliteUserRepo>>,
+) -> Result<HttpResponse, ApiError> {
+    let id = claims.user_id()?;
+
+    let user = service.find_by_id(id).await?.ok_or(ApiError::NotFound)?;
+
+    Ok(HttpResponse::Ok().json(UserPublic::from(user)))
+}
+
+async fn update_profile(
+    claims: Claims,
+    dto: web::Json<UpdateProfile>,
+    service: web::Data<UserService<SqliteUserRepo>>,
+) -> Result<HttpResponse, ApiError> {
+    let id = claims.user_id()?;
+
+    let payload: UpdateUserPayload = dto.into_inner().validate_and_into_domain()?.into();
+
+    let updated = service.update(id, payload).await.map_err(ApiError::from)?;
+
+    Ok(HttpResponse::Ok().json(updated))
 }

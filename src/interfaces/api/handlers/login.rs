@@ -11,7 +11,7 @@ use actix_web::{HttpResponse, web};
 use serde_json::json;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/login").route("", web::post().to(login)));
+    cfg.service(web::scope("/api/login").route("", web::post().to(login)));
 }
 
 async fn login(

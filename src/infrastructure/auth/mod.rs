@@ -13,7 +13,10 @@ use serde_json::json;
 use std::future::{Ready, ready};
 use uuid::Uuid;
 
-use crate::{domain::model::user::Role, infrastructure::keys::Keys};
+use crate::{
+    domain::{error::DomainError, model::user::Role},
+    infrastructure::keys::Keys,
+};
 
 pub mod admin;
 pub mod jwt;
@@ -24,6 +27,12 @@ pub struct Claims {
     pub sub: String,
     pub exp: usize,
     pub role: Role,
+}
+
+impl Claims {
+    pub fn user_id(&self) -> Result<Uuid, DomainError> {
+        Uuid::parse_str(&self.sub).map_err(|_| DomainError::InvalidUserId)
+    }
 }
 
 #[derive(Debug)]

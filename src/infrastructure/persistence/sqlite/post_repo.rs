@@ -37,7 +37,8 @@ impl PostRepository for SqlitePostRepo {
 
                 u.id as "user_id: Uuid",
                 u.username,
-                u.email
+                u.email,
+                u.created_at as "user_created_at: DateTime<Utc>"
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 ORDER BY p.created_at DESC
@@ -59,6 +60,7 @@ impl PostRepository for SqlitePostRepo {
                     id: row.user_id,
                     username: row.username.clone(),
                     email: row.email.clone(),
+                    created_at: row.user_created_at.clone(),
                 },
             })
             .collect();
@@ -77,7 +79,8 @@ impl PostRepository for SqlitePostRepo {
             p.updated_at as "updated_at: DateTime<Utc>",
             u.id as "user_id: Uuid",
             u.username,
-            u.email
+            u.email,
+            u.created_at as "user_created_at: DateTime<Utc>"
             FROM posts p
             JOIN users u ON p.user_id = u.id
             WHERE p.id = ?
@@ -98,6 +101,7 @@ impl PostRepository for SqlitePostRepo {
                 id: row.user_id,
                 username: row.username.clone(),
                 email: row.email.clone(),
+                created_at: row.user_created_at,
             },
         });
 

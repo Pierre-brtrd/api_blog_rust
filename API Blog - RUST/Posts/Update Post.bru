@@ -5,15 +5,20 @@ meta {
 }
 
 patch {
-  url: https://localhost:8080/posts/e9bdbdc5-e31a-402f-9637-c1f9da034571
+  url: https://localhost:8080/posts/5e8ae1d8-8d4d-482a-a3af-515e82b257bd
   body: json
-  auth: inherit
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyYjE4Y2RiOC00YjA1LTQ1YTgtYWRmZC1hYTI3NDZkMjRmZjYiLCJleHAiOjE3NTAyNTM4MDcsInJvbGUiOiJBZG1pbiJ9.LlRNReZNe1B0i6NyzIRd4Id3Zf0DqbPUPCRELLNkQNQ
 }
 
 body:json {
   {
-    "title": "Titre mis à jour V3",
+    "title": "Titre mis à jour V16",
     "content": "Contenu mis à jour v3",
-    "published": true
+    "published": false,
+    "user_id": "2b18cdb8-4b05-45a8-adfd-aa2746d24ff9"
   }
 }

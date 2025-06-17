@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/posts")
+        web::scope("/api/posts")
             .wrap(JwtMiddleware::new())
             .route("", web::get().to(list_posts))
             .route("", web::post().to(create_post))
