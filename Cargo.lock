@@ -352,6 +352,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "jsonwebtoken",
+ "log",
  "once_cell",
  "openssl",
  "rand 0.8.5",

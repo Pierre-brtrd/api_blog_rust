@@ -1,36 +1,55 @@
-pub mod core {
-    pub mod auth;
-    pub mod db;
-    pub mod jwt_middleware;
-    pub mod keys;
-    pub mod tls;
-}
-pub mod api {
-    pub mod error;
-    pub mod login;
-    pub mod post;
-    pub mod user;
-
-    pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
-        user::config(cfg);
-        post::config(cfg);
-        login::config(cfg);
-    }
+pub mod application {
+    pub mod post_service;
+    pub mod user_service;
 }
 
-pub mod config {
-    pub mod settings;
-}
+pub mod config;
 
 pub mod domain {
+    pub mod model {
+        pub mod post;
+        pub mod user;
+    }
     pub mod error;
-    pub mod post;
     pub mod repository;
-    pub mod user;
     pub mod validation;
 }
 
-pub mod infra {
-    pub mod sqlite_post_repo;
-    pub mod sqlite_user_repo;
+pub mod infrastructure {
+    pub mod db;
+
+    pub mod auth;
+
+    pub mod persistence {
+        pub mod sqlite {
+            pub mod post_repo;
+            pub mod user_repo;
+        }
+    }
+
+    pub mod keys;
+    pub mod tls;
+}
+
+pub mod interfaces {
+    pub mod api {
+        pub mod error;
+        pub mod validation;
+
+        pub mod dto {
+            pub mod post;
+            pub mod user;
+        }
+        pub mod handlers {
+            pub mod login;
+            pub mod post;
+            pub mod user;
+        }
+
+        pub fn config(cfg: &mut actix_web::web::ServiceConfig) {
+            handlers::user::config(cfg);
+            handlers::post::config(cfg);
+            handlers::login::config(cfg);
+        }
+    }
 }

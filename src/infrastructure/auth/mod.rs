@@ -13,13 +13,17 @@ use serde_json::json;
 use std::future::{Ready, ready};
 use uuid::Uuid;
 
-use crate::{core::keys::Keys, domain::user::Role};
+use crate::{domain::model::user::Role, infrastructure::keys::Keys};
+
+pub mod admin;
+pub mod jwt;
+pub mod password;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
-    exp: usize,
-    role: Role,
+    pub sub: String,
+    pub exp: usize,
+    pub role: Role,
 }
 
 #[derive(Debug)]

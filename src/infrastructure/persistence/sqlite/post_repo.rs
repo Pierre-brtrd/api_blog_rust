@@ -1,8 +1,10 @@
-use crate::domain::{
-    error::DomainError,
-    post::{NewPost, Post, PostWithAuthor},
-    repository::PostRepository,
-    user::UserPublic,
+use crate::{
+    domain::{
+        error::DomainError,
+        model::post::{Post, PostWithAuthor},
+        repository::PostRepository,
+    },
+    interfaces::api::dto::user::UserPublic,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -22,7 +24,7 @@ impl SqlitePostRepo {
 
 #[async_trait]
 impl PostRepository for SqlitePostRepo {
-    async fn list(&self) -> Result<Vec<PostWithAuthor>, anyhow::Error> {
+    async fn list(&self) -> Result<Vec<PostWithAuthor>, DomainError> {
         let rows = sqlx::query!(
             r#"
                 SELECT 
@@ -64,7 +66,7 @@ impl PostRepository for SqlitePostRepo {
         Ok(posts)
     }
 
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<PostWithAuthor>, anyhow::Error> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<PostWithAuthor>, DomainError> {
         let row = sqlx::query!(
             r#"
             SELECT 
@@ -102,38 +104,27 @@ impl PostRepository for SqlitePostRepo {
         Ok(post_with_author)
     }
 
-    async fn create(&self, new_post: NewPost) -> Result<Post, anyhow::Error> {
-        let id = Uuid::new_v4();
-        let now = Utc::now();
-
+    async fn create(&self, new_post: Post) -> Result<Post, DomainError> {
         sqlx::query_as!(
             Post,
             r#"
             INSERT INTO posts (id, user_id, title, content, published, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
             "#,
-            id,
+            new_post.id,
             new_post.user_id,
             new_post.title,
             new_post.content,
             new_post.published,
-            now
+            new_post.created_at,
         )
         .execute(&self.pool)
         .await?;
 
-        Ok(Post {
-            id,
-            user_id: new_post.user_id.unwrap_or(Uuid::nil()),
-            title: new_post.title.unwrap_or_default(),
-            content: new_post.content.unwrap_or_default(),
-            published: new_post.published,
-            created_at: now,
-            updated_at: None,
-        })
+        Ok(new_post)
     }
 
-    async fn update(&self, post: Post) -> Result<Post, anyhow::Error> {
+    async fn update(&self, post: Post) -> Result<Post, DomainError> {
         let now = Utc::now();
 
         sqlx::query!(
