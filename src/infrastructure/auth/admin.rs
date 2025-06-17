@@ -15,8 +15,8 @@ use jsonwebtoken::{Validation, decode};
 use serde_json::json;
 
 use crate::{
-    core::{auth::Claims, keys::Keys},
-    domain::user::Role,
+    domain::model::user::Role,
+    infrastructure::{auth::Claims, keys::Keys},
 };
 
 pub struct AdminMiddleware;

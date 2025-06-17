@@ -16,4 +16,10 @@ pub enum DomainError {
     InvalidUserId,
     #[error("Erreur de hachage de mot de passe")]
     PasswordHashingError(String),
+    #[error("{0}")]
+    Unauthorized(String),
+    #[error("Internal server error")]
+    InternalError,
+    #[error("This email is already used")]
+    DuplicateEmail,
 }

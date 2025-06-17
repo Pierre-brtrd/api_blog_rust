@@ -13,7 +13,7 @@ use actix_web::{
     web,
 };
 
-use crate::core::{auth::Claims, keys::Keys};
+use crate::infrastructure::{auth::Claims, keys::Keys};
 
 pub struct JwtMiddleware;
 

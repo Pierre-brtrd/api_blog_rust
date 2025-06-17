@@ -1,56 +1,13 @@
-use core::fmt;
-use std::str::FromStr;
-
-use chrono::{DateTime, Utc};
+use crate::{
+    domain::model::user::{Role, User},
+    interfaces::api::{
+        error::ApiError,
+        validation::{require_field, require_password, validate_dto},
+    },
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
-
-use crate::{
-    api::error::ApiError,
-    domain::validation::{PasswordRequirements, validate_password},
-};
-
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
-#[sqlx(type_name = "TEXT")]
-pub enum Role {
-    User,
-    Admin,
-}
-
-impl fmt::Display for Role {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let role_str = match self {
-            Role::User => "user",
-            Role::Admin => "admin",
-        };
-
-        write!(f, "{}", role_str)
-    }
-}
-
-impl FromStr for Role {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Admin" | "admin" => Ok(Role::Admin),
-            "User" | "user" => Ok(Role::User),
-            _ => Err(()),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct User {
-    pub id: Uuid,
-    pub username: String,
-    pub password_hash: String,
-    pub email: String,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: Option<DateTime<Utc>>,
-    pub role: Role,
-}
 
 #[derive(Debug, Serialize)]
 pub struct UserPublic {
@@ -59,7 +16,17 @@ pub struct UserPublic {
     pub email: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+impl From<User> for UserPublic {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Validate, Clone)]
 pub struct NewUser {
     #[validate(
         length(
@@ -81,18 +48,21 @@ pub struct NewUser {
 
 impl NewUser {
     pub fn validate_user(&self) -> Result<(), ApiError> {
-        let password = self
-            .password
-            .as_deref()
-            .ok_or_else(|| ApiError::BadRequest("Password is required".to_string()))?;
+        validate_dto(self)?;
 
-        validate_password(password, &PasswordRequirements::default())
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-
-        self.validate()
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        let _pwd = require_password(self.password.clone())?;
 
         Ok(())
+    }
+
+    pub fn validate_and_into_domain(self) -> Result<(String, String, String), ApiError> {
+        validate_dto(&self)?;
+
+        let username = require_field(self.username, "username")?;
+        let email = require_field(self.email, "email")?;
+        let password = require_password(self.password)?;
+
+        Ok((username, email, password))
     }
 }
 
@@ -107,20 +77,42 @@ pub struct UpdateUser {
     pub password: Option<String>,
     #[validate(email(message = "Email Invalide"))]
     pub email: Option<String>,
-    pub role: Option<String>,
+    pub role: Option<Role>,
+}
+
+pub struct UpdateUserPayload {
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub email: Option<String>,
+    pub role: Option<Role>,
 }
 
 impl UpdateUser {
     pub fn validate_user(&self) -> Result<(), ApiError> {
-        if let Some(password) = &self.password {
-            validate_password(password, &PasswordRequirements::default())
-                .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        validate_dto(self)?;
+
+        if self.password.is_some() {
+            let _pwd = require_password(self.password.clone())?;
         }
 
-        self.validate()
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-
         Ok(())
+    }
+
+    pub fn validate_and_into_domain(self) -> Result<UpdateUserPayload, ApiError> {
+        validate_dto(&self)?;
+
+        let password = if self.password.is_some() {
+            Some(require_password(self.password.clone())?)
+        } else {
+            None
+        };
+
+        Ok(UpdateUserPayload {
+            username: self.username,
+            password,
+            email: self.email,
+            role: self.role,
+        })
     }
 }
 
@@ -134,8 +126,7 @@ pub struct RawLoginRequest {
 
 impl RawLoginRequest {
     pub fn validate_login(&self) -> Result<(), ApiError> {
-        self.validate()
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        validate_dto(self)?;
         Ok(())
     }
 }

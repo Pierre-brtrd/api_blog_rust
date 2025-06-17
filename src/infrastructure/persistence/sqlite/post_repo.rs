@@ -1,8 +1,10 @@
-use crate::domain::{
-    error::DomainError,
-    post::{NewPost, Post, PostWithAuthor},
-    repository::PostRepository,
-    user::UserPublic,
+use crate::{
+    domain::{
+        error::DomainError,
+        model::post::{Post, PostWithAuthor},
+        repository::PostRepository,
+    },
+    interfaces::api::dto::{post::NewPost, user::UserPublic},
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -22,7 +24,7 @@ impl SqlitePostRepo {
 
 #[async_trait]
 impl PostRepository for SqlitePostRepo {
-    async fn list(&self) -> Result<Vec<PostWithAuthor>, anyhow::Error> {
+    async fn list(&self) -> Result<Vec<PostWithAuthor>, DomainError> {
         let rows = sqlx::query!(
             r#"
                 SELECT 
@@ -64,7 +66,7 @@ impl PostRepository for SqlitePostRepo {
         Ok(posts)
     }
 
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<PostWithAuthor>, anyhow::Error> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<PostWithAuthor>, DomainError> {
         let row = sqlx::query!(
             r#"
             SELECT 
@@ -102,7 +104,7 @@ impl PostRepository for SqlitePostRepo {
         Ok(post_with_author)
     }
 
-    async fn create(&self, new_post: NewPost) -> Result<Post, anyhow::Error> {
+    async fn create(&self, new_post: NewPost) -> Result<Post, DomainError> {
         let id = Uuid::new_v4();
         let now = Utc::now();
 
@@ -133,7 +135,7 @@ impl PostRepository for SqlitePostRepo {
         })
     }
 
-    async fn update(&self, post: Post) -> Result<Post, anyhow::Error> {
+    async fn update(&self, post: Post) -> Result<Post, DomainError> {
         let now = Utc::now();
 
         sqlx::query!(

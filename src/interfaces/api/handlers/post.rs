@@ -1,12 +1,9 @@
-use crate::core::middlewares::jwt::JwtMiddleware;
-use crate::infra::sqlite_post_repo::SqlitePostRepo;
+use crate::infrastructure::auth::jwt::JwtMiddleware;
+use crate::infrastructure::persistence::sqlite::post_repo::SqlitePostRepo;
+use crate::interfaces::api::dto::post::{NewPost, UpdatePost};
 use crate::{
-    api::error::ApiError,
-    domain::{
-        error::DomainError,
-        post::{NewPost, Post, UpdatePost},
-        repository::PostRepository,
-    },
+    domain::{error::DomainError, model::post::Post, repository::PostRepository},
+    interfaces::api::error::ApiError,
 };
 use actix_web::{HttpResponse, web};
 use uuid::Uuid;

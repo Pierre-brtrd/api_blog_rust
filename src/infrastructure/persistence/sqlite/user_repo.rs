@@ -1,46 +1,12 @@
-use crate::{
-    api::error::ApiError,
-    domain::{
-        error::DomainError,
-        repository::UserRepository,
-        user::{NewUser, Role, User},
-    },
+use crate::domain::{
+    error::DomainError,
+    model::user::{Role, User},
+    repository::UserRepository,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::SqlitePool;
 use uuid::Uuid;
-
-use argon2::password_hash::{Error, PasswordHash, SaltString, rand_core::RngCore};
-use argon2::{Argon2, PasswordHasher, PasswordVerifier};
-use rand::SeedableRng;
-use rand_chacha::ChaCha20Rng;
-
-pub fn hash_password(password: &str) -> Result<String, Error> {
-    // Generate a random salt
-    let mut rng = ChaCha20Rng::from_entropy();
-    let mut salt_bytes = [0u8; 32];
-    rng.fill_bytes(&mut salt_bytes);
-
-    let salt = SaltString::generate(&mut rng);
-
-    // hash the password
-    let argon2 = Argon2::default();
-    let password_hash = argon2
-        .hash_password(password.as_bytes(), &salt)?
-        .to_string();
-
-    Ok(password_hash)
-}
-
-pub fn verify_password(password: &str, hash: &str) -> Result<bool, Error> {
-    let parsed_hash = PasswordHash::new(hash)?;
-    let argon2 = Argon2::default();
-
-    Ok(argon2
-        .verify_password(password.as_bytes(), &parsed_hash)
-        .is_ok())
-}
 
 #[derive(Clone)]
 pub struct SqliteUserRepo {
@@ -55,7 +21,7 @@ impl SqliteUserRepo {
 
 #[async_trait]
 impl UserRepository for SqliteUserRepo {
-    async fn list(&self) -> Result<Vec<User>, anyhow::Error> {
+    async fn list(&self) -> Result<Vec<User>, DomainError> {
         let rows = sqlx::query_as!(
             User,
             r#"
@@ -69,35 +35,21 @@ impl UserRepository for SqliteUserRepo {
         Ok(rows)
     }
 
-    async fn create(&self, new_user: NewUser) -> Result<User, anyhow::Error> {
-        let id = Uuid::new_v4();
-        let now = Utc::now();
-        let password = new_user
-            .password
-            .as_deref()
-            .ok_or_else(|| DomainError::EmptyContent)?;
-
-        let hashed = hash_password(password)
-            .map_err(|e| DomainError::PasswordHashingError(e.to_string()))?;
-
-        let user = NewUser {
-            username: new_user.username,
-            password: Some(hashed),
-            email: new_user.email,
-        };
-
+    async fn create(&self, user: User) -> Result<User, DomainError> {
         let res = sqlx::query_as!(
             User,
             r#"
-            INSERT INTO users (id, username, password_hash, email, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (id, username, role, password_hash, email, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             RETURNING id as "id: Uuid", username, email, role as "role: Role", password_hash, created_at as "created_at: DateTime<Utc>", updated_at as "updated_at: DateTime<Utc>"
             "#,
-            id,
+            user.id,
             user.username,
-            user.password,
+            user.role,
+            user.password_hash,
             user.email,
-            now
+            user.created_at,
+            user.updated_at,
         )
         .fetch_one(&self.pool)
         .await;
@@ -105,13 +57,13 @@ impl UserRepository for SqliteUserRepo {
         match res {
             Ok(user) => Ok(user),
             Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
-                Err(ApiError::BadRequest("Email already exists".to_string()).into())
+                Err(DomainError::DuplicateEmail)
             }
             Err(e) => Err(e.into()),
         }
     }
 
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, anyhow::Error> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError> {
         let user = sqlx::query_as!(
             User,
             r#"
@@ -127,7 +79,7 @@ impl UserRepository for SqliteUserRepo {
         Ok(user)
     }
 
-    async fn find_by_username(&self, username: &str) -> Result<Option<User>, anyhow::Error> {
+    async fn find_by_username(&self, username: &str) -> Result<Option<User>, DomainError> {
         let user = sqlx::query_as!(
             User,
             r#"
@@ -143,7 +95,7 @@ impl UserRepository for SqliteUserRepo {
         Ok(user)
     }
 
-    async fn update(&self, user: User) -> Result<User, anyhow::Error> {
+    async fn update(&self, user: User) -> Result<User, DomainError> {
         let now = Utc::now();
         let res = sqlx::query_as!(
             User,
@@ -166,7 +118,7 @@ impl UserRepository for SqliteUserRepo {
         match res {
             Ok(user) => Ok(user),
             Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
-                Err(ApiError::BadRequest("Email already exists".to_string()).into())
+                Err(DomainError::DuplicateEmail)
             }
             Err(e) => Err(e.into()),
         }

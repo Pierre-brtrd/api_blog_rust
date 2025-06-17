@@ -1,30 +1,7 @@
-use crate::{api::error::ApiError, domain::user::UserPublic};
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use crate::interfaces::api::{error::ApiError, validation::validate_dto};
+use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Post {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub title: String,
-    pub content: String,
-    pub published: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: Option<DateTime<Utc>>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct PostWithAuthor {
-    pub id: Uuid,
-    pub title: String,
-    pub content: String,
-    pub published: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: Option<DateTime<Utc>>,
-    pub author: UserPublic,
-}
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct NewPost {
@@ -49,9 +26,7 @@ pub struct NewPost {
 
 impl NewPost {
     pub fn validate_post(&self) -> Result<(), ApiError> {
-        self.validate()
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-
+        validate_dto(self)?;
         Ok(())
     }
 }
@@ -72,9 +47,7 @@ pub struct UpdatePost {
 
 impl UpdatePost {
     pub fn validate_post(&self) -> Result<(), ApiError> {
-        self.validate()
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-
+        validate_dto(self)?;
         Ok(())
     }
 }
