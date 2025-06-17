@@ -1,10 +1,11 @@
+use std::str::FromStr;
+
+use crate::application::post_service::PostService;
 use crate::infrastructure::auth::jwt::JwtMiddleware;
 use crate::infrastructure::persistence::sqlite::post_repo::SqlitePostRepo;
+use crate::infrastructure::persistence::sqlite::user_repo::SqliteUserRepo;
 use crate::interfaces::api::dto::post::{NewPost, UpdatePost};
-use crate::{
-    domain::{error::DomainError, model::post::Post, repository::PostRepository},
-    interfaces::api::error::ApiError,
-};
+use crate::{domain::error::DomainError, interfaces::api::error::ApiError};
 use actix_web::{HttpResponse, web};
 use uuid::Uuid;
 
@@ -20,19 +21,22 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list_posts(repo: web::Data<SqlitePostRepo>) -> Result<HttpResponse, ApiError> {
-    let posts = repo.list().await.map_err(|_| ApiError::InternalError)?;
+async fn list_posts(
+    service: web::Data<PostService<SqlitePostRepo, SqliteUserRepo>>,
+) -> Result<HttpResponse, ApiError> {
+    let posts = service.list().await.map_err(ApiError::from)?;
 
     Ok(HttpResponse::Ok().json(posts))
 }
 
 async fn get_post(
-    repo: web::Data<SqlitePostRepo>,
-    id: web::Path<Uuid>,
+    service: web::Data<PostService<SqlitePostRepo, SqliteUserRepo>>,
+    id: web::Path<String>,
 ) -> Result<HttpResponse, ApiError> {
-    let id = id.into_inner();
+    let id = Uuid::from_str(&id.into_inner())
+        .map_err(|_| ApiError::BadRequest("Invalid UUID format".to_string()))?;
 
-    match repo.find_by_id(id).await {
+    match service.find_by_id(id).await {
         Ok(Some(post)) => Ok(HttpResponse::Ok().json(post)),
         Ok(None) => Err(ApiError::NotFound),
         Err(_) => Err(ApiError::InternalError),
@@ -40,78 +44,42 @@ async fn get_post(
 }
 
 async fn create_post(
-    repo: web::Data<SqlitePostRepo>,
-    json: web::Json<NewPost>,
+    service: web::Data<PostService<SqlitePostRepo, SqliteUserRepo>>,
+    dto: web::Json<NewPost>,
 ) -> Result<HttpResponse, ApiError> {
-    let new = json.into_inner();
-    new.validate_post()
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let (title, content, published, user_id) = dto.into_inner().validate_and_into_domain()?;
 
-    repo.create(new)
+    let post = service
+        .create(title, content, published, user_id)
         .await
-        .map(|post| HttpResponse::Created().json(post))
-        .map_err(|e| ApiError::BadRequest(e.to_string()))
+        .map_err(ApiError::from)?;
+
+    Ok(HttpResponse::Created().json(post))
 }
 
 async fn update_post(
-    repo: web::Data<SqlitePostRepo>,
-    path: web::Path<Uuid>,
-    json: web::Json<UpdatePost>,
+    service: web::Data<PostService<SqlitePostRepo, SqliteUserRepo>>,
+    path: web::Path<String>,
+    dto: web::Json<UpdatePost>,
 ) -> Result<HttpResponse, ApiError> {
-    let id = path.into_inner();
+    let id = Uuid::from_str(&path.into_inner())
+        .map_err(|_| ApiError::BadRequest("Invalid UUID format".to_string()))?;
 
-    let mut post_to_update = repo
-        .find_by_id(id)
-        .await
-        .map_err(|_| ApiError::InternalError)?
-        .ok_or(ApiError::NotFound)?;
+    let payload = dto.into_inner().validate_and_into_domain()?;
 
-    let update = json.into_inner();
-    update
-        .validate_post()
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-
-    if let Some(title) = &update.title {
-        post_to_update.title = title.clone();
-    }
-
-    if let Some(content) = &update.content {
-        post_to_update.content = content.clone();
-    }
-
-    if let Some(published) = update.published {
-        post_to_update.published = published;
-    }
-
-    if let Some(user_id) = update.user_id {
-        post_to_update.author.id = user_id;
-    }
-
-    let post = Post {
-        id: post_to_update.id,
-        user_id: post_to_update.author.id,
-        title: post_to_update.title,
-        content: post_to_update.content,
-        published: post_to_update.published,
-        created_at: post_to_update.created_at,
-        updated_at: Some(chrono::Utc::now()),
-    };
-
-    let updated = repo
-        .update(post)
-        .await
-        .map_err(|_| ApiError::InternalError)?;
+    let updated = service.update(id, payload).await.map_err(ApiError::from)?;
 
     Ok(HttpResponse::Ok().json(updated))
 }
 
 async fn delete_post(
-    repo: web::Data<SqlitePostRepo>,
-    id: web::Path<Uuid>,
+    service: web::Data<PostService<SqlitePostRepo, SqliteUserRepo>>,
+    id: web::Path<String>,
 ) -> Result<HttpResponse, ApiError> {
-    let id = id.into_inner();
+    let id = Uuid::from_str(&id.into_inner())
+        .map_err(|_| ApiError::BadRequest("Invalid UUID format".to_string()))?;
 
-    match repo.delete(id).await {
+    match service.delete(id).await {
         Ok(()) => Ok(HttpResponse::NoContent().finish()),
         Err(DomainError::NotFound) => Err(ApiError::NotFound),
         Err(_) => Err(ApiError::InternalError),

@@ -1,4 +1,7 @@
-use crate::interfaces::api::{error::ApiError, validation::validate_dto};
+use crate::interfaces::api::{
+    error::ApiError,
+    validation::{require_field, validate_dto},
+};
 use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
@@ -29,6 +32,15 @@ impl NewPost {
         validate_dto(self)?;
         Ok(())
     }
+
+    pub fn validate_and_into_domain(self) -> Result<(String, String, bool, Uuid), ApiError> {
+        let title = require_field(self.title, "title")?;
+        let content = require_field(self.content, "content")?;
+        let user_id = require_field(self.user_id, "user_id")?;
+        let published = self.published;
+
+        Ok((title, content, published, user_id))
+    }
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -45,9 +57,32 @@ pub struct UpdatePost {
     pub user_id: Option<Uuid>,
 }
 
+pub struct UpdatePostPayload {
+    pub title: Option<String>,
+    pub content: Option<String>,
+    pub published: Option<bool>,
+    pub user_id: Option<Uuid>,
+}
+
 impl UpdatePost {
     pub fn validate_post(&self) -> Result<(), ApiError> {
         validate_dto(self)?;
         Ok(())
+    }
+
+    pub fn validate_and_into_domain(self) -> Result<UpdatePostPayload, ApiError> {
+        validate_dto(&self)?;
+
+        let title = self.title;
+        let content = self.content;
+        let published = self.published;
+        let user_id = self.user_id;
+
+        Ok(UpdatePostPayload {
+            title,
+            content,
+            published,
+            user_id,
+        })
     }
 }

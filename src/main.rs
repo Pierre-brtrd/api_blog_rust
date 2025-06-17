@@ -1,6 +1,7 @@
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer, web};
 use anyhow::Result;
+use api_back_trio::application::post_service::PostService;
 use api_back_trio::application::user_service::UserService;
 use api_back_trio::config::Settings;
 use api_back_trio::infrastructure::db::init_db;
@@ -21,6 +22,7 @@ async fn main() -> Result<()> {
     let user_repo = SqliteUserRepo::new(pool.clone());
     let keys = Keys::new(settings.jwt_secret.as_bytes());
 
+    let post_service = PostService::new(post_repo, user_repo.clone());
     let user_service = UserService::new(user_repo, keys.clone());
 
     let ssl = build_ssl_acceptor(
@@ -32,7 +34,7 @@ async fn main() -> Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .app_data(web::Data::new(post_repo.clone()))
+            .app_data(web::Data::new(post_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
             .app_data(web::Data::new(keys.clone()))
             .app_data(web::Data::new(settings.clone()))

@@ -4,7 +4,7 @@ use crate::{
         model::post::{Post, PostWithAuthor},
         repository::PostRepository,
     },
-    interfaces::api::dto::{post::NewPost, user::UserPublic},
+    interfaces::api::dto::user::UserPublic,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -104,35 +104,24 @@ impl PostRepository for SqlitePostRepo {
         Ok(post_with_author)
     }
 
-    async fn create(&self, new_post: NewPost) -> Result<Post, DomainError> {
-        let id = Uuid::new_v4();
-        let now = Utc::now();
-
+    async fn create(&self, new_post: Post) -> Result<Post, DomainError> {
         sqlx::query_as!(
             Post,
             r#"
             INSERT INTO posts (id, user_id, title, content, published, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
             "#,
-            id,
+            new_post.id,
             new_post.user_id,
             new_post.title,
             new_post.content,
             new_post.published,
-            now
+            new_post.created_at,
         )
         .execute(&self.pool)
         .await?;
 
-        Ok(Post {
-            id,
-            user_id: new_post.user_id.unwrap_or(Uuid::nil()),
-            title: new_post.title.unwrap_or_default(),
-            content: new_post.content.unwrap_or_default(),
-            published: new_post.published,
-            created_at: now,
-            updated_at: None,
-        })
+        Ok(new_post)
     }
 
     async fn update(&self, post: Post) -> Result<Post, DomainError> {

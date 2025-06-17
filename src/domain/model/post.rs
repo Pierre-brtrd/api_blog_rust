@@ -24,3 +24,17 @@ pub struct PostWithAuthor {
     pub updated_at: Option<DateTime<Utc>>,
     pub author: UserPublic,
 }
+
+impl From<PostWithAuthor> for Post {
+    fn from(pwa: PostWithAuthor) -> Self {
+        Self {
+            id: pwa.id,
+            user_id: pwa.author.id,
+            title: pwa.title,
+            content: pwa.content,
+            published: pwa.published,
+            created_at: pwa.created_at,
+            updated_at: pwa.updated_at,
+        }
+    }
+}

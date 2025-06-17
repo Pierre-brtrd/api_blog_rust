@@ -1,12 +1,9 @@
-use crate::{
-    domain::{
-        error::DomainError,
-        model::{
-            post::{Post, PostWithAuthor},
-            user::User,
-        },
+use crate::domain::{
+    error::DomainError,
+    model::{
+        post::{Post, PostWithAuthor},
+        user::User,
     },
-    interfaces::api::dto::post::NewPost,
 };
 use async_trait::async_trait;
 use uuid::Uuid;
@@ -15,7 +12,7 @@ use uuid::Uuid;
 pub trait PostRepository {
     async fn list(&self) -> Result<Vec<PostWithAuthor>, DomainError>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<PostWithAuthor>, DomainError>;
-    async fn create(&self, new_post: NewPost) -> Result<Post, DomainError>;
+    async fn create(&self, new_post: Post) -> Result<Post, DomainError>;
     async fn update(&self, post: Post) -> Result<Post, DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
