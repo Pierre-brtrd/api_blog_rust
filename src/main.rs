@@ -5,6 +5,7 @@ use anyhow::Result;
 use api_back_trio::application::post_service::PostService;
 use api_back_trio::application::user_service::UserService;
 use api_back_trio::config::Settings;
+use api_back_trio::infrastructure::security::headers::secure_headers;
 use api_back_trio::infrastructure::security::tls::build_ssl_acceptor;
 use api_back_trio::infrastructure::{
     db::init_db,
@@ -39,6 +40,7 @@ async fn main() -> Result<()> {
             .wrap(Hsts)
             .wrap(cors_middleware)
             .wrap(Logger::default())
+            .wrap(secure_headers())
             .app_data(web::Data::new(post_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
             .app_data(web::Data::new(keys.clone()))

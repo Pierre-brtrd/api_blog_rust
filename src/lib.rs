@@ -21,6 +21,7 @@ pub mod infrastructure {
 
     pub mod security {
         pub mod cors;
+        pub mod headers;
         pub mod hsts;
         pub mod keys;
         pub mod tls;
