@@ -16,11 +16,10 @@ pub mod domain {
 }
 
 pub mod infrastructure {
-    pub mod db;
-
     pub mod auth;
-
     pub mod cors;
+    pub mod db;
+    pub mod hsts;
 
     pub mod persistence {
         pub mod sqlite {

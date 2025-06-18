@@ -7,6 +7,7 @@ use api_back_trio::application::user_service::UserService;
 use api_back_trio::config::Settings;
 use api_back_trio::infrastructure::cors::build_cors;
 use api_back_trio::infrastructure::db::init_db;
+use api_back_trio::infrastructure::hsts::Hsts;
 use api_back_trio::infrastructure::keys::Keys;
 use api_back_trio::infrastructure::persistence::sqlite::post_repo::SqlitePostRepo;
 use api_back_trio::infrastructure::persistence::sqlite::user_repo::SqliteUserRepo;
@@ -37,6 +38,7 @@ async fn main() -> Result<()> {
         let cors_middleware: Cors = build_cors(&settings.cors_origin);
 
         App::new()
+            .wrap(Hsts)
             .wrap(cors_middleware)
             .wrap(Logger::default())
             .app_data(web::Data::new(post_service.clone()))
