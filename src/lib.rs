@@ -47,6 +47,8 @@ pub mod interfaces {
         pub mod handlers {
             pub mod login;
             pub mod post;
+            pub mod profile;
+            pub mod register;
             pub mod user;
         }
 
@@ -54,6 +56,8 @@ pub mod interfaces {
             handlers::user::config(cfg);
             handlers::post::config(cfg);
             handlers::login::config(cfg);
+            handlers::profile::config(cfg);
+            handlers::register::config(cfg);
         }
     }
 }
