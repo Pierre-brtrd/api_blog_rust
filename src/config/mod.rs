@@ -1,28 +1,34 @@
 use serde::Deserialize;
+use std::env;
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ServerSettings {
     pub host: String,
     pub port: u16,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct TlsSettings {
     pub cert_path: String,
     pub key_path: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub database_url: String,
     pub server: ServerSettings,
     pub tls: Option<TlsSettings>,
     pub jwt_secret: String,
+    pub cors_origin: String,
 }
 
 impl Settings {
     pub fn from_env() -> anyhow::Result<Self> {
         dotenv::dotenv().ok();
+
+        for (key, value) in env::vars() {
+            println!("{}: {}", key, value);
+        }
 
         let s = config::Config::builder()
             .add_source(config::Environment::default().separator("__"))

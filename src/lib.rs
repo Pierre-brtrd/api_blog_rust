@@ -20,6 +20,8 @@ pub mod infrastructure {
 
     pub mod auth;
 
+    pub mod cors;
+
     pub mod persistence {
         pub mod sqlite {
             pub mod post_repo;
