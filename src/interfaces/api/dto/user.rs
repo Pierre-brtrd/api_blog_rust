@@ -43,6 +43,8 @@ pub struct NewUser {
     pub username: Option<String>,
     #[validate(required(message = "Password obligatoire"))]
     pub password: Option<String>,
+    #[validate(required(message = "Confirm Password obligatoire"))]
+    pub confirm_password: Option<String>,
     #[validate(
         email(message = "Email Invalide"),
         required(message = "Email obligatoire")
@@ -54,6 +56,10 @@ impl NewUser {
     pub fn validate_user(&self) -> Result<(), ApiError> {
         validate_dto(self)?;
 
+        if self.password != self.confirm_password {
+            return Err(ApiError::BadRequest("Passwords do not match".to_string()));
+        }
+
         let _pwd = require_password(self.password.clone())?;
 
         Ok(())
@@ -64,9 +70,14 @@ impl NewUser {
 
         let username = require_field(self.username, "username")?;
         let email = require_field(self.email, "email")?;
+
+        if self.password != self.confirm_password {
+            return Err(ApiError::BadRequest("Passwords must not match".to_string()));
+        }
+
         let password = require_password(self.password)?;
 
-        Ok((username, email, password))
+        Ok((username, password, email))
     }
 }
 
