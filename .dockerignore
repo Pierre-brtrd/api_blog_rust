@@ -1,0 +1,5 @@
+*.sh
+!entrypoint.sh
+
+target/
+.git

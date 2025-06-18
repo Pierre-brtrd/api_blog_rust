@@ -1,3 +1,7 @@
+[[bin]]
+name = "blog-api"
+path = "src/main.rs"
+
 [package]
 name = "api_back_trio"
 version = "0.1.0"
