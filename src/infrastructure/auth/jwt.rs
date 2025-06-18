@@ -23,6 +23,12 @@ impl JwtMiddleware {
     }
 }
 
+impl Default for JwtMiddleware {
+    fn default() -> Self {
+        JwtMiddleware::new()
+    }
+}
+
 pub struct JwtMiddlewareService<S> {
     service: Arc<S>,
 }

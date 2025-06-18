@@ -104,7 +104,7 @@ pub fn create_jwt_token(user_id: Uuid, role: Role, keys: &Keys) -> Result<String
     let claims = Claims {
         sub: user_id.to_string(),
         exp,
-        role: role,
+        role,
     };
 
     encode(&Header::default(), &claims, &keys.encoding)

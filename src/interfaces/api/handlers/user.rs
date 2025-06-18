@@ -120,7 +120,7 @@ async fn update_profile(
 ) -> Result<HttpResponse, ApiError> {
     let id = claims.user_id()?;
 
-    let payload: UpdateUserPayload = dto.into_inner().validate_and_into_domain()?.into();
+    let payload: UpdateUserPayload = dto.into_inner().validate_and_into_domain()?;
 
     let updated = service.update(id, payload).await.map_err(ApiError::from)?;
 

@@ -163,7 +163,7 @@ impl UpdateProfile {
 
         Ok(UpdateUserPayload {
             username: self.username,
-            password: password,
+            password,
             email: self.email,
             role: None,
         })

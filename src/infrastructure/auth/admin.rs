@@ -27,6 +27,12 @@ impl AdminMiddleware {
     }
 }
 
+impl Default for AdminMiddleware {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct AdminMiddlewareService<S> {
     service: Arc<S>,
 }

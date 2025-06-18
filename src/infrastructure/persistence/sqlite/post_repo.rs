@@ -60,7 +60,7 @@ impl PostRepository for SqlitePostRepo {
                     id: row.user_id,
                     username: row.username.clone(),
                     email: row.email.clone(),
-                    created_at: row.user_created_at.clone(),
+                    created_at: row.user_created_at,
                 },
             })
             .collect();
