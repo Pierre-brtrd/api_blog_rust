@@ -16,9 +16,16 @@ pub mod domain {
 }
 
 pub mod infrastructure {
+    pub mod auth;
     pub mod db;
 
-    pub mod auth;
+    pub mod security {
+        pub mod cors;
+        pub mod headers;
+        pub mod hsts;
+        pub mod keys;
+        pub mod tls;
+    }
 
     pub mod persistence {
         pub mod sqlite {
@@ -26,9 +33,6 @@ pub mod infrastructure {
             pub mod user_repo;
         }
     }
-
-    pub mod keys;
-    pub mod tls;
 }
 
 pub mod interfaces {

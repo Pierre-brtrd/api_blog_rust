@@ -12,7 +12,7 @@ use crate::{
             create_jwt_token,
             password::{hash_password, verify_password},
         },
-        keys::Keys,
+        security::keys::Keys,
     },
     interfaces::api::dto::user::UpdateUserPayload,
 };

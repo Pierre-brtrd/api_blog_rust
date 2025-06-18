@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::{error::DomainError, model::user::Role},
-    infrastructure::keys::Keys,
+    infrastructure::security::keys::Keys,
 };
 
 pub mod admin;

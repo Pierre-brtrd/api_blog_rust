@@ -16,7 +16,7 @@ use serde_json::json;
 
 use crate::{
     domain::model::user::Role,
-    infrastructure::{auth::Claims, keys::Keys},
+    infrastructure::{auth::Claims, security::keys::Keys},
 };
 
 pub struct AdminMiddleware;
