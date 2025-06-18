@@ -22,6 +22,23 @@ Elle gère les **utilisateurs** (avec rôles et authentification JWT) et les **a
 
 ---
 
+## 🔒 Sécurité
+
+Cette API intègre plusieurs mécanismes de sécurité pour protéger vos données et vos utilisateurs :
+
+-   **CORS** : contrôle fin des origines autorisées (via regex), méthodes et en-têtes acceptés.
+-   **HSTS** : header `Strict-Transport-Security` pour forcer HTTPS et prévenir les attaques downgrade.
+-   **Headers sécurisés** :
+    -   `X-Content-Type-Options: nosniff`
+    -   `X-Frame-Options: DENY`
+    -   `Referrer-Policy: no-referrer`
+    -   `Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()`
+    -   (et autres : `Expect-CT`, `X-Permitted-Cross-Domain-Policies`, etc.)
+-   **TLS/HTTPS** : chiffrement des communications via OpenSSL (`build_ssl_acceptor`).
+-   **JWT** : authentification stateless avec JSON Web Tokens, signature et validation des claims sur chaque requête.
+
+---
+
 ## 📦 Prérequis
 
 -   **Rust** (cargo) ≥ 1.68
@@ -129,25 +146,40 @@ src/
 │   ├── repository.rs
 │   ├── error.rs
 │   └── validation.rs
-│
 ├── application/    # Logique métier (services)
 │   ├── user_service.rs
 │   └── post_service.rs
-│
 ├── infrastructure/ # Implémentations techniques
-│   ├── db/ (migrations + init_db)
-│   ├── keys.rs
-│   ├── tls.rs
-│   ├── auth/ (JWT, admin middleware, hashing)
-│   └── persistence/sqlite/ (repos SQLx)
-│
-└── interfaces/     # Couche web (DTO, handlers, routes, erreurs API)
+│   ├── security/
+│   │   ├── keys.rs
+│   │   ├── cors.rs
+│   │   ├── headers.rs
+│   │   ├── hsts.rs
+│   │   └── tls.rs
+│   ├── db/
+│   │   └── mod.rs
+│   ├── auth/
+│   │   ├── admin.rs
+│   │   ├── jwt.rs
+│   │   ├── mod.rs
+│   │   └── password.rs
+│   └── persistence/
+│       └── sqlite/
+│           ├── post_repo.rs
+│           └── user_repo.rs
+└── interfaces/
     ├── api/
-    │   ├── dto/         # Request/Response structs + validation
-    │   ├── handlers/    # Actix-Web handlers & routes
+    │   ├── dto/
+    │   │   ├── post_dto.rs
+    │   │   └── user_dto.rs
+    │   ├── handlers/
+    │   │   ├── login.rs
+    │   │   ├── post.rs
+    │   │   └── user.rs
     │   ├── error.rs     # Mapping DomainError → ApiError
     │   └── validation.rs
-    └── config/         # Chargement `.env` → Settings
+    └── config/
+        └── mod.rs
 ```
 
 -   **Domain** : votre cœur métier et ses invariants
