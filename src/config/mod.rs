@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use std::env;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ServerSettings {
@@ -25,10 +24,6 @@ pub struct Settings {
 impl Settings {
     pub fn from_env() -> anyhow::Result<Self> {
         dotenv::dotenv().ok();
-
-        for (key, value) in env::vars() {
-            println!("{}: {}", key, value);
-        }
 
         let s = config::Config::builder()
             .add_source(config::Environment::default().separator("__"))

@@ -14,7 +14,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/api/login").route("", web::post().to(login)));
 }
 
-async fn login(
+pub async fn login(
     raw: web::Json<RawLoginRequest>,
     service: web::Data<UserService<SqliteUserRepo>>,
 ) -> Result<HttpResponse, ApiError> {
