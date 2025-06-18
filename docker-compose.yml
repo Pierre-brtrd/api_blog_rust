@@ -1,0 +1,21 @@
+services:
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: on-failure
+        container_name: blog_api_rust
+        image: blog-api:latest
+        ports:
+            - "8080:8080"
+        volumes:
+            - ./blog_rust.db:/app/blog_rust.db
+            - ./.env:/app/.env:ro
+        environment:
+            - SERVER__HOST=0.0.0.0
+            - SERVER__PORT=8080
+            - DATABASE_URL=sqlite:///app/blog_rust.db
+            - JWT_SECRET=${JWT_SECRET}
+            - CORS_ORIGIN=${CORS_ORIGIN}
+            - TLS__CERT_PATH=/app/certs/localhost.pem
+            - TLS__KEY_PATH=/app/certs/localhost-key.pem
